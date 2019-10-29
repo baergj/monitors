@@ -14,7 +14,7 @@ import (
 // not have a serial number).
 type Display struct {
 	Name       string `json:"name"`
-	Serial     string `json:"serial,omitempty"`
+	Serial     uint32 `json:"serial,omitempty"`
 	IsLaptop   bool   `json:"is-laptop,omitempty"`
 	connected  bool   // connected indicates whether this Display has been detected.
 	xrandrName string // xrandrName matches this Display with xrandr.
