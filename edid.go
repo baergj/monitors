@@ -1,40 +1,35 @@
 package main
 
 import (
-	"bufio"
-	"io"
+	"bytes"
+	"encoding/binary"
+	"encoding/hex"
 	"log"
-	"os/exec"
-	"regexp"
+	"reflect"
+)
+
+const (
+	serialOffset = 12
+)
+
+var (
+	magic = []byte{0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00}
 )
 
 // decodeSerial obtains the serial number from the given EDID block.
-func decodeSerial(edid string) string {
-	cmd := exec.Command("edid-decode")
-	in, err := cmd.StdinPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	out, err := cmd.StdoutPipe()
+func decodeSerial(edid string) uint32 {
+	edidBytes, err := hex.DecodeString(edid)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go func() {
-		io.WriteString(in, edid)
-		in.Close()
-	}()
-
-	re := regexp.MustCompile(`Serial Number (\w+)`)
-	sc := bufio.NewScanner(out)
-	cmd.Start()
-	var serial string
-	for sc.Scan() {
-		parts := re.FindStringSubmatch(sc.Text())
-		if len(parts) > 0 {
-			serial = parts[1]
-		}
+	if bytes.Compare(edidBytes[0:8], magic) != 0 {
+		log.Fatal("given EDID is not magical enough")
 	}
 
-	return serial
+	if uintptr(len(edidBytes)) < serialOffset+reflect.TypeOf(uint32(0)).Size() {
+		log.Fatal("given EDID too short to contain a serial number")
+	}
+
+	return binary.LittleEndian.Uint32(edidBytes[serialOffset:])
 }

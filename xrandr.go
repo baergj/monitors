@@ -76,7 +76,7 @@ func detectDisplays() map[string]struct{} {
 	return allDisplays
 }
 
-func noteConnectedDisplay(xrandrName, serial string, isLaptop bool) {
+func noteConnectedDisplay(xrandrName string, serial uint32, isLaptop bool) {
 	for i := range Config.Displays {
 		display := &Config.Displays[i]
 		if display.Serial == serial && display.IsLaptop == isLaptop {
@@ -87,7 +87,7 @@ func noteConnectedDisplay(xrandrName, serial string, isLaptop bool) {
 			return
 		}
 	}
-	log.Printf("display %q (serial %s, isLaptop %v) not found in config\n",
+	log.Printf("display %q (serial %d, isLaptop %v) not found in config\n",
 		xrandrName, serial, isLaptop)
 }
 
