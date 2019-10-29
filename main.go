@@ -1,13 +1,10 @@
 package main
 
 import (
-	"bufio"
 	"flag"
-	"io"
 	"log"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 )
 
@@ -45,36 +42,6 @@ func parseOptions() {
 	flag.BoolVar(&pretend, "pretend", false, "print what would have been executed and exit")
 	flag.StringVar(&xdisplay, "xdisplay", ":0", "which X display to manage")
 	flag.Parse()
-}
-
-func decodeSerial(edid string) string {
-	cmd := exec.Command("edid-decode")
-	in, err := cmd.StdinPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-	out, err := cmd.StdoutPipe()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	go func() {
-		io.WriteString(in, edid)
-		in.Close()
-	}()
-
-	re := regexp.MustCompile(`Serial Number (\w+)`)
-	sc := bufio.NewScanner(out)
-	cmd.Start()
-	var serial string
-	for sc.Scan() {
-		parts := re.FindStringSubmatch(sc.Text())
-		if len(parts) > 0 {
-			serial = parts[1]
-		}
-	}
-
-	return serial
 }
 
 func chooseLayout() Layout {
