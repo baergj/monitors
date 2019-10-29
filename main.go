@@ -2,15 +2,12 @@ package main
 
 import (
 	"bufio"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"os/exec"
-	"os/user"
-	"path"
 	"regexp"
 	"strings"
 )
@@ -18,31 +15,6 @@ import (
 var configPath string
 var pretend bool
 var xdisplay string
-
-type Display struct {
-	Name       string `json:"name"`
-	Serial     string `json:"serial,omitempty"`
-	IsLaptop   bool   `json:"is-laptop,omitempty"`
-	connected  bool
-	xrandrName string
-}
-
-type Layout struct {
-	Name     string `json:"name"`
-	Displays []struct {
-		Display   string `json:"display"`
-		Primary   bool   `json:"primary,omitempty"`
-		Positions []struct {
-			Position string `json:"location"`
-			Display  string `json:"display"`
-		} `json:"relative-locations,omitempty"`
-	} `json:"displays"`
-}
-
-var config struct {
-	Displays []Display `json:"displays"`
-	Layouts  []Layout
-}
 
 var displayByName map[string]*Display
 
@@ -74,29 +46,6 @@ func parseOptions() {
 	flag.BoolVar(&pretend, "pretend", false, "print what would have been executed and exit")
 	flag.StringVar(&xdisplay, "xdisplay", ":0", "which X display to manage")
 	flag.Parse()
-}
-
-func parseConfig() {
-	usr, err := user.Current()
-	if err != nil {
-		log.Fatal(fmt.Sprintf("failed to get current user: %v", err))
-	}
-	file, err := os.Open(path.Join(usr.HomeDir, configPath))
-	if err != nil {
-		log.Fatal(fmt.Sprintf("failed to open config: %v", err))
-	}
-	decoder := json.NewDecoder(file)
-	decoder.DisallowUnknownFields()
-	err = decoder.Decode(&config)
-	if err != nil {
-		log.Fatal(fmt.Sprintf("failed to parse config: %v", err))
-	}
-
-	displayByName = make(map[string]*Display)
-	for i := range config.Displays {
-		display := &config.Displays[i]
-		displayByName[display.Name] = display
-	}
 }
 
 const (
@@ -191,8 +140,8 @@ func decodeSerial(edid string) string {
 }
 
 func noteConnectedDisplay(xrandrName, serial string, isLaptop bool) {
-	for i := range config.Displays {
-		display := &config.Displays[i]
+	for i := range Config.Displays {
+		display := &Config.Displays[i]
 		if display.Serial == serial && display.IsLaptop == isLaptop {
 			display.xrandrName = xrandrName
 			display.connected = true
@@ -206,7 +155,7 @@ func noteConnectedDisplay(xrandrName, serial string, isLaptop bool) {
 }
 
 func chooseLayout() Layout {
-	for _, layout := range config.Layouts {
+	for _, layout := range Config.Layouts {
 		match := true
 		for _, display := range layout.Displays {
 			if !isConnected(display.Display) {
@@ -226,7 +175,7 @@ func chooseLayout() Layout {
 }
 
 func isConnected(name string) bool {
-	for _, display := range config.Displays {
+	for _, display := range Config.Displays {
 		if display.Name == name && display.connected {
 			return true
 		}
@@ -250,7 +199,7 @@ func composeXrandrArgs(allDisplays map[string]struct{}, layout Layout) []string 
 	}
 
 	// Explicitly disable all unused displays.
-	for xrandrName, _ := range allDisplays {
+	for xrandrName := range allDisplays {
 		cmd = append(cmd, "--output", xrandrName, "--off")
 	}
 	return cmd
