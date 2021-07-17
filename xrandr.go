@@ -31,7 +31,7 @@ func detectDisplays() map[string]struct{} {
 		log.Fatal(err)
 	}
 
-	dispRE := regexp.MustCompile(`^(\w+) (disconnected|connected)`)
+	dispRE := regexp.MustCompile(`^(\S+) (disconnected|connected)`)
 	edidStartRE := regexp.MustCompile(`^\s+EDID:`)
 	edidRE := regexp.MustCompile(`^\s+[a-f0-9]+`)
 
